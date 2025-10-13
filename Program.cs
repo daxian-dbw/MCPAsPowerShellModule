@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
 using System.Management.Automation;
+using MyFirstMCP.Tools;
 
 namespace MyFirstMCP;
 
@@ -28,7 +29,8 @@ public class MyMCPCommand : PSCmdlet
         builder.Services
             .AddMcpServer()
             .WithStdioServerTransport()
-            .WithToolsFromAssembly();
+            //.WithToolsFromAssembly();
+            .WithTools<PowerShellTools>();
 
         await builder.Build().RunAsync();
     }

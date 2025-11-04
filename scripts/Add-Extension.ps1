@@ -9,10 +9,10 @@ Adds a file name extension to a supplied name.
 Takes any strings for the file name or extension.
 
 .PARAMETER Name
-First operand of the addition.
+The file name to add extension to.
 
 .PARAMETER Extension
-Second operand of the addition.
+The file extension to use.
 
 .OUTPUTS
 

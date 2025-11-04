@@ -50,9 +50,8 @@ public class PSScriptMcpServerTool : McpServerTool
             .Execute<PSObject>() ?? throw new InvalidDataException("The script has no comment based help defined.");
 
         string toolName = Path.GetFileNameWithoutExtension(_scriptPath).Replace('-', '_');
-        string toolDescription = help.description?[0]?.Text ?? throw new InvalidDataException("No description found for the script.");
-
-        PSObject[] parameters = help.parameters?.parameter ?? Array.Empty<PSObject>();
+        string toolDescription = ValueOf<string>(help.description?[0]?.Text) ?? throw new InvalidDataException("No description found for the script.");
+        PSObject[] parameters = ValueOf<PSObject[]>(help.parameters?.parameter) ?? Array.Empty<PSObject>();
 
         JsonObject schema = new()
         {
@@ -66,8 +65,8 @@ public class PSScriptMcpServerTool : McpServerTool
 
         foreach (dynamic parameter in parameters)
         {
-            CommandParameterInfo paramInfo = scriptInfo.Parameters[parameter.name];
-            string paramDescription = parameter?.description[0].Text;
+            ParameterMetadata paramInfo = scriptInfo.Parameters[ValueOf<string>(parameter.name)];
+            string paramDescription = ValueOf<string>(parameter?.description[0].Text);
 
             var paramAttr = paramInfo.Attributes.OfType<ParameterAttribute>().FirstOrDefault();
             object defaultValue = paramAttr.Mandatory ? null : GetDefaultValue(scriptInfo, paramInfo.Name, paramInfo.ParameterType);
@@ -97,6 +96,17 @@ public class PSScriptMcpServerTool : McpServerTool
             Description = toolDescription,
             InputSchema = JsonSerializer.SerializeToElement(schema)
         };
+    }
+
+    private static T ValueOf<T>(dynamic value)
+    {
+        if (value is T ret)
+        {
+            return ret;
+        }
+
+        object v = value is PSObject psobj ? psobj.BaseObject : value;
+        return (T)v;
     }
 
     private static object GetDefaultValue(ExternalScriptInfo scriptInfo, string paramName, Type paramType)

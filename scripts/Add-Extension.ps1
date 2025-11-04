@@ -8,34 +8,23 @@ Adds a file name extension to a supplied name.
 Adds a file name extension to a supplied name.
 Takes any strings for the file name or extension.
 
-.PARAMETER number1
+.PARAMETER Name
 First operand of the addition.
 
-.PARAMETER number2
+.PARAMETER Extension
 Second operand of the addition.
 
 .OUTPUTS
 
 System.String. Add-Extension returns a string with the extension
 or file name.
-
-.EXAMPLE
-
-PS> Add-Extension -Name "File"
-File.txt
-
-.EXAMPLE
-
-PS> Add-Extension -Name "File" -Extension "doc"
-File.doc
-
-.EXAMPLE
-
-PS> Add-Extension "File" "doc"
-File.doc
 #>
+param(
+    [Parameter(Mandatory)]
+    [string] $Name,
 
+    [Parameter()]
+    [string] $Extension = "txt"
+)
 
-param([int] $number1, [int] $number2)
-
-$number1 + $number2
+$Name, $Extension -join '.'

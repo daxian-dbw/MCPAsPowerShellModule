@@ -1,4 +1,5 @@
 using ModelContextProtocol.Server;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
@@ -35,7 +36,7 @@ public sealed class PowerShellTools
         return _pwsh
             .AddCommand("Get-Help").AddParameter("Name", command)
             .AddCommand("Out-String").AddParameter("Width", 150)
-            .Execute(error);
+            .ExecuteAndReturnString(error);
     }
 
     [McpServerTool, Description("Get help content about one or more parameters of a PowerShell cmdlet.")]
@@ -54,13 +55,13 @@ public sealed class PowerShellTools
         return _pwsh
             .AddCommand("Get-Help").AddParameter("Name", command).AddParameter("Parameter", parameters)
             .AddCommand("Out-String").AddParameter("Width", 150)
-            .Execute(error);
+            .ExecuteAndReturnString(error);
     }
 }
 
 internal static class PowerShellExt
 {
-    public static string Execute(this PowerShell pwsh, string errorTemplate)
+    public static string ExecuteAndReturnString(this PowerShell pwsh, string errorTemplate)
     {
         try
         {
@@ -74,5 +75,23 @@ internal static class PowerShellExt
         {
             return string.Format(errorTemplate, e.Message);
         }
+    }
+
+    public static Collection<PSObject> Execute(this PowerShell pwsh)
+    {
+        var result = pwsh.Invoke();
+        pwsh.Commands.Clear();
+        pwsh.Streams.ClearStreams();
+
+        return result;
+    }
+
+    public static T Execute<T>(this PowerShell pwsh)
+    {
+        T result = pwsh.Invoke<T>().FirstOrDefault();
+        pwsh.Commands.Clear();
+        pwsh.Streams.ClearStreams();
+
+        return result;
     }
 }

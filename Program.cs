@@ -13,9 +13,12 @@ public class MyMCPCommand : PSCmdlet
 {
     protected override void ProcessRecord()
     {
-        Task mcpTask = Task.Run(async () => await StartMCPServer([]));
+        Task mcpTask = Task.Run(async () => await StartMCPServer([ScriptRoot]));
         mcpTask.GetAwaiter().GetResult();
     }
+
+    [Parameter()]
+    public string ScriptRoot { get; set; }
 
     static async Task StartMCPServer(string[] args)
     {
@@ -26,11 +29,22 @@ public class MyMCPCommand : PSCmdlet
             consoleLogOptions.LogToStandardErrorThreshold = LogLevel.Trace;
         });
 
+        string scriptRoot = args.Length is 1 ? args[0] : null;
+        List<McpServerTool> tools = [];
+        if (Directory.Exists(scriptRoot))
+        {
+            foreach (string file in Directory.EnumerateFiles(scriptRoot, "*.ps1"))
+            {
+                tools.Add(new PSScriptMcpServerTool(file));
+            }
+        }
+
         builder.Services
             .AddMcpServer()
             .WithStdioServerTransport()
-            //.WithToolsFromAssembly();
-            .WithTools<PowerShellTools>();
+            .WithTools(tools);
+        //.WithToolsFromAssembly();
+        //.WithTools<PowerShellTools>();
 
         await builder.Build().RunAsync();
     }

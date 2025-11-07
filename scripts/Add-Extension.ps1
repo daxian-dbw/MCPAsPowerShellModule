@@ -14,6 +14,9 @@ The file name to add extension to.
 .PARAMETER Extension
 The file extension to use.
 
+.PARAMETER UseGroup
+Indicates whether group the result in curly brace.
+
 .OUTPUTS
 
 System.String. Add-Extension returns a string with the extension
@@ -23,8 +26,10 @@ param(
     [Parameter(Mandatory)]
     [string] $Name,
 
-    [Parameter()]
-    [string] $Extension = "txt"
+    [string] $Extension = "txt",
+    [switch] $UseGroup
 )
 
-$Name, $Extension -join '.'
+$result = $Name, $Extension -join '.'
+
+$UseGroup ? "{$result}" : $result

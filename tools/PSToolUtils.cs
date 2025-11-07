@@ -12,6 +12,28 @@ namespace MyFirstMCP.Tools;
 
 internal class PSToolUtils
 {
+    internal static Dictionary<string, PSObject> ConvertArgs(PowerShell pwsh, IReadOnlyDictionary<string, JsonElement> argDict)
+    {
+        Dictionary<string, PSObject> realArgs = null;
+        if (argDict is { })
+        {
+            realArgs = [];
+            foreach (var kvp in argDict)
+            {
+                PSObject value = pwsh
+                    .AddCommand("ConvertFrom-Json")
+                    .AddParameter("InputObject", kvp.Value.GetRawText())
+                    .AddParameter("Depth", 5)
+                    .AddParameter("NoEnumerate", true)
+                    .Execute().FirstOrDefault();
+
+                realArgs.Add(kvp.Key, value);
+            }
+        }
+
+        return realArgs;
+    }
+
     internal static CallToolResult GetErrorResult(string toolName, Exception ex)
     {
         StringBuilder sb = null;

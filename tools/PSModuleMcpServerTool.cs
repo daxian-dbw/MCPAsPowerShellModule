@@ -111,10 +111,12 @@ public class ModuleToolsMetadata
         // So, those function tools should be invoked in the same Runspace.
         lock (_pwsh)
         {
+            Dictionary<string, PSObject> realArgs = PSToolUtils.ConvertArgs(_pwsh, argDict);
+
             _pwsh.AddCommand(funcName);
-            if (argDict is { })
+            if (realArgs is { })
             {
-                foreach (var kvp in argDict)
+                foreach (var kvp in realArgs)
                 {
                     _pwsh.AddParameter(kvp.Key, kvp.Value);
                 }
@@ -128,9 +130,10 @@ public class ModuleToolsMetadata
     {
         lock (_pwsh)
         {
+            object inputObj = input.Count is 1 ? input[0] : input;
             string json = _pwsh
                 .AddCommand("ConvertTo-Json")
-                .AddParameter("InputObject", input)
+                .AddParameter("InputObject", inputObj)
                 .AddParameter("Depth", 5)
                 .AddParameter("EnumsAsStrings", true)
                 .AddParameter("Compress", true)

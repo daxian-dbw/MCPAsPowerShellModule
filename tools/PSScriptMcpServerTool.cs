@@ -39,10 +39,16 @@ public class PSScriptMcpServerTool : McpServerTool
         ArgumentNullException.ThrowIfNull(request);
         cancellationToken.ThrowIfCancellationRequested();
 
-        _pwsh.AddCommand(_scriptPath);
+        Dictionary<string, PSObject> realArgs = null;
         if (request.Params?.Arguments is { } argDict)
         {
-            foreach (var kvp in argDict)
+            realArgs = PSToolUtils.ConvertArgs(_pwsh, argDict);
+        }
+
+        _pwsh.AddCommand(_scriptPath);
+        if (realArgs is { })
+        {
+            foreach (var kvp in realArgs)
             {
                 _pwsh.AddParameter(kvp.Key, kvp.Value);
             }
@@ -71,9 +77,10 @@ public class PSScriptMcpServerTool : McpServerTool
             return new CallToolResult() { Content = [new TextContentBlock { Text = text }] };
         }
 
+        object input = results.Count is 1 ? results[0] : results;
         string json = _pwsh
             .AddCommand("ConvertTo-Json")
-            .AddParameter("InputObject", results)
+            .AddParameter("InputObject", input)
             .AddParameter("Depth", 5)
             .AddParameter("EnumsAsStrings", true)
             .AddParameter("Compress", true)

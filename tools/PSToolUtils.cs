@@ -112,24 +112,29 @@ internal class PSToolUtils
         foreach (dynamic parameter in parameters)
         {
             ParameterMetadata paramInfo = commandInfo.Parameters[ValueOf<string>(parameter.name)];
-            string paramDescription = ValueOf<string>(parameter?.description[0].Text);
+            string paramDescription = ValueOf<string>(parameter.description?[0]?.Text)
+                ?? throw new InvalidDataException($"No description found for the parameter '{paramInfo.Name}'.");
 
             var paramAttr = paramInfo.Attributes.OfType<ParameterAttribute>().FirstOrDefault();
-            object defaultValue = paramAttr.Mandatory
+            var paramType = paramInfo.ParameterType == typeof(SwitchParameter)
+                ? typeof(bool)
+                : paramInfo.ParameterType;
+
+            object defaultValue = paramAttr?.Mandatory == true
                 ? null
                 : GetDefaultValue(
                     (scriptInfo?.ScriptBlock ?? funcInfo.ScriptBlock).Ast,
                     paramInfo.Name,
-                    paramInfo.ParameterType);
+                    paramType);
 
             var paramSchema = AIJsonUtilities.CreateJsonSchema(
-                type: paramInfo.ParameterType,
+                type: paramType,
                 description: paramDescription,
                 hasDefaultValue: defaultValue is { },
                 defaultValue: defaultValue);
 
             parameterSchemas.Add(paramInfo.Name, JsonSerializer.SerializeToNode(paramSchema));
-            if (paramAttr.Mandatory)
+            if (paramAttr?.Mandatory == true)
             {
                 (requiredProperties ??= []).Add((JsonNode)paramInfo.Name);
             }
@@ -175,14 +180,19 @@ internal class PSToolUtils
             return constantAst.Value;
         }
 
-        if (paramType == typeof(int))
+        if (paramType == typeof(string))
+        {
+            return string.Empty;
+        }
+
+        if (paramType == typeof(int) || paramType == typeof(long) || paramType == typeof(short))
         {
             return 0;
         }
 
-        if (paramType == typeof(string))
+        if (paramType == typeof(bool))
         {
-            return string.Empty;
+            return false;
         }
 
         return typeof(PSScriptMcpServerTool)

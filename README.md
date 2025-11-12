@@ -1,28 +1,55 @@
-### Wrap .NET MCP Server as a PowerShell module
+# MyFirstMCP: PowerShell MCP Server Module
 
-This project serves as an example to demonstrate how to create a .NET MCP server as a PowerShell module.
+This project creates a PowerShell module that serves as a Model Context Protocol (MCP) server.
+The module exposes the `Start-MyMCP` cmdlet, which starts the MCP server and dynamically exposes tools based on how it is invoked.
 
-To build this project, run the following command from the root directory of your local repo:
+## MCP server as a PowerShell Module
+
+**Benefits of shipping an MCP server as a PowerShell module:**
+
+- Small size: 3.35 MB. Only the .NET MCP SDK assemblies are required.
+- Availability: easy to distribute and install via PowerShell Gallery across platforms.
+- Flexible: expose C# tools, `.ps1` script tools, or module function tools.
+- For an MCP server that needs PowerShell features, the runtime is naturally available (runs in `pwsh.exe`), so no need to ship PowerShell SDK assemblies.
+
+## Building the Module
+
+To build the project, run:
 
 ```pwsh
 dotnet publish .\MyFirstMCP.csproj
 ```
 
-It will produce the module `MyFirstMCP` at `.\out\MyFirstMCP`.
+The published module will be available at `.\out\MyFirstMCP`.
 
-Once you deploy the module to your module path, you can simply run `pwsh -noprofile -c MyFirstMCP\Start-MyMCP` to start the MCP server.
+After deploying the module to your PowerShell module path, you can start the MCP server using the `Start-MyMCP` cmdlet.
 
-### Benefit of Shipping as PowerShell module
+## Start-MyMCP Cmdlet Parameter Sets
 
-1. This works with both Windows PowerShel v5.1 and PowerShell v7+.
-   So technically, users on Windows don't need to pre-install any runtime in order to use your MCP server.
+The `Start-MyMCP` cmdlet supports three parameter sets:
 
-1. Comparing to having a self-contained application,
-   - The size of a module is very small.
-     For this particular project, the size of the module is 3.3mb, almost all of which are the necessary assemblies for using the .NET model context protocol SDK.
-   - It's easier to distribute a PowerShell module.
+```
+Start-MyMCP [<CommonParameters>]
+Start-MyMCP -ScriptRoot <string> [<CommonParameters>]
+Start-MyMCP -Module <string> [<CommonParameters>]
+```
 
-### Use it in VSCode
+- **Default**: `Start-MyMCP` exposes all MCP tools defined in the C# code of this assembly.
+- **ScriptRoot**: `Start-MyMCP -ScriptRoot <path-to-directory>` exposes each `.ps1` script file in the specified directory as an MCP tool.
+- **Module**: `Start-MyMCP -Module <module-name-or-path-to-module>` exposes each function within the specified module as an MCP tool.
+
+Examples of script tools and module function tools can be found in the `./scripts` folder.
+
+Both script tools and module function tools use comment-based help to define the description and parameters for each tool. This ensures that tool metadata is discoverable and user-friendly.
+
+### Runspace Behavior
+
+- Each script tool runs in its own dedicated Runspace, so they are isolated from each other.
+- Module function tools share the same Runspace for the module, allowing changes to module state made by one function tool to be visible to others. This is because module functions are considered related and may need to share state.
+
+## Using MyFirstMCP in VSCode
+
+### 1. Exposing C# MCP Tools
 
 ```json
 {
@@ -34,6 +61,48 @@ Once you deploy the module to your module path, you can simply run `pwsh -noprof
                 "-noprofile",
                 "-c",
                 "MyFirstMCP\\Start-MyMCP"
+            ]
+        }
+    },
+    "inputs": []
+}
+```
+
+### 2. Exposing PowerShell Script Tools
+
+Assume the local repo root is at `E:\repos\MyFirstMCP`.
+
+```json
+{
+    "servers": {
+        "MyFirstMCP": {
+            "type": "stdio",
+            "command": "pwsh",
+            "args": [
+                "-noprofile",
+                "-c",
+                "MyFirstMCP\\Start-MyMCP -ScriptRoot E:\\repos\\MyFirstMCP\\scripts"
+            ]
+        }
+    },
+    "inputs": []
+}
+```
+
+### 3. Exposing Module Function Tools
+
+Assume the local repo root is at `E:\repos\MyFirstMCP`.
+
+```json
+{
+    "servers": {
+        "MyFirstMCP": {
+            "type": "stdio",
+            "command": "pwsh",
+            "args": [
+                "-noprofile",
+                "-c",
+                "MyFirstMCP\\Start-MyMCP -Module E:\\repos\\MyFirstMCP\\scripts\\tools.psm1"
             ]
         }
     },

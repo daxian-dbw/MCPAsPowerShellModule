@@ -11,6 +11,11 @@
 
     <!-- Deploy the produced assembly -->
     <PublishDir>out\MyFirstMCP</PublishDir>
+
+    <!-- .NET Tool properties -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>MyFirstMCP</ToolCommandName>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

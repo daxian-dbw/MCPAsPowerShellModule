@@ -161,8 +161,7 @@ internal class PSToolUtils
             return ret;
         }
 
-        object v = value is PSObject psobj ? psobj.BaseObject : value;
-        return (T)v;
+        return LanguagePrimitives.ConvertTo<T>(value);
     }
 
     private static object GetDefaultValue(Ast ast, string paramName, Type paramType)

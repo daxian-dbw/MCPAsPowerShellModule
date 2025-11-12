@@ -39,7 +39,7 @@ param(
     [string] $TargetRelease
 )
 
-$prJson = gh pr view  --repo PowerShell/PowerShell `
+$prJson = gh pr view $PRNumber --repo PowerShell/PowerShell `
   --json state,mergeCommit,title,author,labels `
   --jq '{state: .state, merge_commit: .mergeCommit.oid, title: .title, author: .author.login, labels: [.labels[].name]}'
 

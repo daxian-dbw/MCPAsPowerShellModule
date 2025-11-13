@@ -36,6 +36,25 @@ internal class PSToolUtils
 
     internal static CallToolResult GetErrorResult(string toolName, Exception ex)
     {
+        string message = FormatException(ex);
+
+        string error = $"""
+            Failed to run the tool '{toolName}' due to the following error:
+            ```
+            {message}
+            ```
+            Check to see if it's caused by the passed-in command name or parameter name(s), and if so, please try again.
+            """;
+
+        return new CallToolResult()
+        {
+            Content = [new TextContentBlock { Text = error }],
+            IsError = true
+        };
+    }
+
+    internal static string FormatException(Exception ex)
+    {
         StringBuilder sb = null;
         string message = ex.Message;
 
@@ -56,19 +75,7 @@ internal class PSToolUtils
             message = sb.ToString();
         }
 
-        string error = $"""
-            Failed to run the tool '{toolName}' due to the following error:
-            ```
-            {message}
-            ```
-            Check to see if it's caused by the passed-in command name or parameter name(s), and if so, please try again.
-            """;
-
-        return new CallToolResult()
-        {
-            Content = [new TextContentBlock { Text = error }],
-            IsError = true
-        };
+        return message;
     }
 
     internal static Tool CreateToolForScriptOrFunction(PowerShell pwsh, CommandInfo commandInfo)

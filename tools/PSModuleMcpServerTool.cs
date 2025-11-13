@@ -4,6 +4,7 @@ using System.Management.Automation.Runspaces;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using System.Collections.ObjectModel;
+using Microsoft.Extensions.Logging;
 
 namespace MyFirstMCP.Tools;
 
@@ -35,7 +36,7 @@ public class PSModuleMcpServerTool : McpServerTool
 
         try
         {
-            Collection<PSObject> results = _metadata.InvokeFunction(_funcName, request.Params?.Arguments);
+            Collection<PSObject> results = _metadata.InvokeFunction(_funcName, request);
             return ValueTask.FromResult(GetCallToolResult(results));
         }
         catch (Exception e)
@@ -80,11 +81,19 @@ public class ModuleToolsMetadata
         _moduleName = moduleName;
         _pwsh = PowerShell.Create(iss);
 
-        _moduleInfo = _pwsh
-            .AddCommand("Import-Module")
-            .AddParameter("Name", _moduleName)
-            .AddParameter("PassThru", true)
-            .Execute<PSModuleInfo>();
+        try
+        {
+            _moduleInfo = _pwsh
+                .AddCommand("Import-Module")
+                .AddParameter("Name", _moduleName)
+                .AddParameter("PassThru", true)
+                .AddParameter("ErrorAction", "Stop")
+                .Execute<PSModuleInfo>();
+        }
+        catch (ActionPreferenceStopException ex)
+        {
+            throw ex.ErrorRecord.Exception;
+        }
     }
 
     internal IEnumerable<McpServerTool> GetFunctionMcpTools()
@@ -104,25 +113,39 @@ public class ModuleToolsMetadata
         }
     }
 
-    internal Collection<PSObject> InvokeFunction(string funcName, IReadOnlyDictionary<string, JsonElement> argDict)
+    internal Collection<PSObject> InvokeFunction(string funcName, RequestContext<CallToolRequestParams> request)
     {
+        IReadOnlyDictionary<string, JsonElement> argDict = request.Params?.Arguments;
+
+        ILoggerProvider loggerProvider = request.Server.AsClientLoggerProvider();
+        ILogger logger = loggerProvider.CreateLogger(funcName);
+        StreamHandler streamHandler = new(logger);
+
         // We don't support parallel tool calling for function tools exposed from a module.
         // A function tool's change to the module state should be seen by other function tools.
         // So, those function tools should be invoked in the same Runspace.
         lock (_pwsh)
         {
-            Dictionary<string, PSObject> realArgs = PSToolUtils.ConvertArgs(_pwsh, argDict);
-
-            _pwsh.AddCommand(funcName);
-            if (realArgs is { })
+            try
             {
-                foreach (var kvp in realArgs)
-                {
-                    _pwsh.AddParameter(kvp.Key, kvp.Value);
-                }
-            }
+                streamHandler.RegisterStreamEvents(_pwsh);
+                Dictionary<string, PSObject> realArgs = PSToolUtils.ConvertArgs(_pwsh, argDict);
 
-            return _pwsh.Execute();
+                _pwsh.AddCommand(funcName);
+                if (realArgs is { })
+                {
+                    foreach (var kvp in realArgs)
+                    {
+                        _pwsh.AddParameter(kvp.Key, kvp.Value);
+                    }
+                }
+
+                return _pwsh.Execute();
+            }
+            finally
+            {
+                streamHandler.UnregisterStreamEvents(_pwsh);
+            }
         }
     }
 

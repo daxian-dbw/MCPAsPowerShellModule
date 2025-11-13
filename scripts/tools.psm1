@@ -64,8 +64,13 @@ function get_prs_with_backport_label {
     $Repo = "PowerShell"
     $considerLabel = "Backport-$TargetRelease.x-Consider"
 
+    Write-Verbose "Target Release: $TargetRelease" -Verbose
+
     $prsJson = gh pr list --repo "$Owner/$Repo" --label $considerLabel --state merged --json number,title,url,mergedAt --limit 100 2>&1
     $prs = $prsJson | ConvertFrom-Json
+
+    Write-Debug "Result count: $($prs.Length)" -Debug
+
     # Sort PRs from oldest merged to newest merged
     $prs | Sort-Object mergedAt
 }

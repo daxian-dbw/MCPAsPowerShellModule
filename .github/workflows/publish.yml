@@ -1,0 +1,63 @@
+name: Publish Module
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore MyFirstMCP.csproj
+      
+    - name: Build and publish module
+      run: dotnet publish MyFirstMCP.csproj --no-restore --configuration Release
+      
+    - name: Publish PowerShell Module to GitHub Packages
+      shell: pwsh
+      run: |
+        # Register GitHub Packages as a PSRepository
+        $repoParams = @{
+            Name = 'GitHubPackages'
+            Uri = 'https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json'
+            Trusted = $true
+            ApiVersion = 'V3'
+        }
+        Register-PSResourceRepository @repoParams
+        
+        # Publish the module to GitHub Packages
+        Publish-PSResource -Path ./out/MyFirstMCP -Repository GitHubPackages -ApiKey ${{ secrets.GITHUB_TOKEN }} -Verbose
+      
+    - name: Upload module artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: MyFirstMCP-Module
+        path: out/MyFirstMCP/
+        retention-days: 90
+        
+    - name: Create module archive
+      run: |
+        cd out
+        zip -r MyFirstMCP-Module.zip MyFirstMCP/
+        
+    - name: Upload module archive artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: MyFirstMCP-Module-Archive
+        path: out/MyFirstMCP-Module.zip
+        retention-days: 90

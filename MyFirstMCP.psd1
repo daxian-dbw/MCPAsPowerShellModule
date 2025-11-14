@@ -35,6 +35,8 @@ AliasesToExport = @()
 
 Description = "My First MCP Server"
 
+PowerShellVersion      = '7.4'
+
 # HelpInfo URI of this module
 # HelpInfoURI = ''
 

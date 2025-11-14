@@ -1,8 +1,9 @@
+using System.Collections.ObjectModel;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
+using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
-using System.Collections.ObjectModel;
 
 namespace MyFirstMCP.Tools;
 
@@ -54,14 +55,23 @@ public class PSScriptMcpServerTool : McpServerTool
             }
         }
 
+        ILoggerProvider loggerProvider = request.Server.AsClientLoggerProvider();
+        ILogger logger = loggerProvider.CreateLogger(_tool.Name);
+        StreamHandler streamHandler = new(logger);
+
         try
         {
+            streamHandler.RegisterStreamEvents(_pwsh);
             Collection<PSObject> results = _pwsh.Execute();
             return ValueTask.FromResult(GetCallToolResult(results));
         }
         catch (Exception e)
         {
             return ValueTask.FromResult(PSToolUtils.GetErrorResult(_tool.Name, e));
+        }
+        finally
+        {
+            streamHandler.UnregisterStreamEvents(_pwsh);
         }
     }
 

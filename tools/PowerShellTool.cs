@@ -66,32 +66,44 @@ internal static class PowerShellExt
         try
         {
             string result = pwsh.Invoke<string>().FirstOrDefault();
-            pwsh.Commands.Clear();
-            pwsh.Streams.ClearStreams();
-
             return result;
         }
         catch (Exception e)
         {
             return string.Format(errorTemplate, e.Message);
         }
+        finally
+        {
+            pwsh.Commands.Clear();
+            pwsh.Streams.ClearStreams();
+        }
     }
 
     public static Collection<PSObject> Execute(this PowerShell pwsh)
     {
-        var result = pwsh.Invoke();
-        pwsh.Commands.Clear();
-        pwsh.Streams.ClearStreams();
-
-        return result;
+        try
+        {
+            var result = pwsh.Invoke();
+            return result;
+        }
+        finally
+        {
+            pwsh.Commands.Clear();
+            pwsh.Streams.ClearStreams();
+        }
     }
 
     public static T Execute<T>(this PowerShell pwsh)
     {
-        T result = pwsh.Invoke<T>().FirstOrDefault();
-        pwsh.Commands.Clear();
-        pwsh.Streams.ClearStreams();
-
-        return result;
+        try
+        {
+            T result = pwsh.Invoke<T>().FirstOrDefault();
+            return result;
+        }
+        finally
+        {
+            pwsh.Commands.Clear();
+            pwsh.Streams.ClearStreams();
+        }
     }
 }

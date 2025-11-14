@@ -41,7 +41,6 @@ jobs:
             Name = 'GitHubPackages'
             SourceLocation = 'https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json'
             PublishLocation = 'https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json'
-            InstallationPolicy = 'Trusted'
         }
         Register-PSResourceRepository @repoParams
         

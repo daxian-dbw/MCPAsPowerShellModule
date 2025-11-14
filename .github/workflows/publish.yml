@@ -39,8 +39,9 @@ jobs:
         # Register GitHub Packages as a PSRepository
         $repoParams = @{
             Name = 'GitHubPackages'
-            SourceLocation = 'https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json'
-            PublishLocation = 'https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json'
+            Uri = 'https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json'
+            Trusted = $true
+            ApiVersion = 'V3'
         }
         Register-PSResourceRepository @repoParams
         

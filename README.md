@@ -109,3 +109,33 @@ Assume the local repo root is at `E:\repos\MyFirstMCP`.
     "inputs": []
 }
 ```
+
+## Installing latest version from main
+
+### Prerequisites
+
+1. PSResourceGet installed.
+2. A SecretStore created called `default`
+
+### Instructions
+
+#### Setup a PAT to read the feed.  
+
+Create a [Personal Access Token (Classic)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic) with `package:read` permission. At the time of writing, this is the only type of token that allows these premissions.
+
+```powershell
+Set-Secret -Name GitHubPackageRead
+```
+
+The command should prompt for the secret.
+
+Register the Repository.
+This assumes you called you vault default as described in the prerequisites.
+
+```powershell
+Register-PSResourceRepository -name dongbo -uri https://nuget.pkg.github.com/daxian-dbw/index.json -ApiVersion V3 -CredentialInfo @{VaultName='default';SecretName='GitHubPackageRead'}
+```
+
+```powershell
+install-psresource myfirstmcp
+```
